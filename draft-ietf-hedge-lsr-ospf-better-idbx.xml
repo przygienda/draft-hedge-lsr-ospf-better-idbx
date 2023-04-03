@@ -10,15 +10,35 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="std" docName="draft-ietf-raviolli-trusted-domain-srv6"
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx"
      ipr="trust200902"
      obsoletes="" submissionType="IETF" updates="" xml:lang="en">
     <front>
-        <title abbrev="draft-ietf-hedge-lsr-ospf-better-idbx">
+        <title abbrev="draft-hegde-lsr-ospf-better-idbx">
             Trusted Domain SRv6
         </title>
 
-        <author fullname="Tony Przygienda" initials="A." surname="Przygienda">
+        <author fullname="Shraddha Hegde" initials="S." surname="Hegde">
+            <organization>Juniper</organization>
+            <address>
+                <postal>
+                    <street>
+                    </street>
+                    <city></city>
+                    <region>
+                    </region>
+                    <code/>
+                    <country>India
+                    </country>
+                </postal>
+                <phone/>
+                <facsimile/>
+                <email>shraddha@juniper.net
+                </email>
+                <uri/>
+            </address>
+        </author>
+         <author fullname="Tony Przygienda" initials="A." surname="Przygienda">
             <organization>Juniper</organization>
             <address>
                 <postal>
@@ -41,6 +61,16 @@
         <date year="2023"/>
         <abstract>
             <t>
+                 When an OSPF router undergoes restart, the previous incarnations of the LSAs belonging to that router
+                 still linger in the database of other routers in the OSPF domain until they are Maxaged. When the restarting
+                 router comes back, neighboring routers establish adjacency with the restarting router while the 
+                 restarting router is still bringing-up the interfaces and adjacencies. The combination of stale LSA
+                 of the restarting router in the database and the new LSA from adjacenct routers may get interpreted as,
+                 connectivity being established through the restarting router. This incorrect interpretation may cause
+                 traffic blackhole. This document suggests improvements in the OSPF database exchange process to prevent
+                 traffic blackhole due to stale LSA misinterpretation.
+                 
+                 
             </t>
         </abstract>
         <note title="Requirements Language">
@@ -54,12 +84,36 @@
     <middle>
 
 
-
-        <section title="Description" >
+        <section title="Introduction" anchor='sec_introduction'>        
             <t>
-
+               When an OSPF <xref target ='RFC2328'/> router restarts, it's stale LSAs are left in the
+               database of the other routers in the OSPF domain until the LSAs are MaxAged. The stale
+                Router LSA contains links to all the neighbors that had adjacencies Up before the router
+                 restarted.
+                 <figure anchor="Topology_1" title="OSPF Network">
+                 <artwork>
+                            ----------C--------
+                            |                 |
+                      A-----B                 E-----F
+                            |                 |
+                            --------D---------                   
+                      
+                      
+                 </artwork> 
+                 </figure>
+                 <xref target ='Topology_1'/> describes an OSPF network. When C undergoes restart, the other routers
+                 in the domain hold the stale LSA on Router C in their database. The stale LSA may have links to B and E,
+                 which represents the topology of C before it went for restart. When C comes up,
+                 it initiates database exchange process with B and E. B and E have C's stale LSA with higher 
+                 sequence number in their database and assume it is the latest copy and bring up the adjacency 
+                 with C and go to Full state. Based on C's Stale LSA having B and E link in the LSA back-link check is
+                 satisfied and B and E update their routing table to point to C. This may cause traffic blackhole 
+                 as C may not have the adjacency up and the routes programmed correctly.
+                 
             </t>
         </section>
+          <section title="Solution" anchor='sec_solution'>
+         </section>
 
         <section title="Glossary" >
             <dl newline="true" spacing="normal">
