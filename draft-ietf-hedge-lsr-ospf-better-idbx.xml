@@ -113,7 +113,48 @@
             </t>
         </section>
           <section title="Solution" anchor='sec_solution'>
-         </section>
+               <t>
+                    The database exchange procedure form <xref target ='RFC2328'/> section 7.2 is updated and additional
+                    procedure added as below.</t>
+                 <t>   
+                    During Database exchange when a router receives an LSA from the neighbor where, neighbor is the originator
+                    of the LSA and the sequence number of the LSA is smaller than it's own database copy, then the router marks
+                    it's own database copy as stale and sends LSReq for the LSA with the received sequence number. Until an LSA with
+                    the sequence number greater than it's own database copy is received, this LSReq MUST not be satisfied and the neighborship
+                      MUST NOT move to Full state.</t>
+               <section title="Example" anchor='sec_ex'>
+                    <t> Let us take an example when C is restarting. Let us take an example where C has originated an LSA with sequence number
+                         Y before restarting. After restarting C orginates the same LSA with sequence number X where X < Y.
+                         <figure anchor="seq_dgm" title="Modified Database Exchange Procedure">
+                         <artwork>
+                              
+                                                  C-----------------E                                                  
+                              
+                                              DBD: LSA A origin:C  ------->
+                                                  Sequence:X
+                                                                      DBD: LSA A Origin:C
+                                                              <------       Sequence:Y
+                                              LSReq LSA A, 
+                                              origin C, Seq Y----->
+                                                                    Modified Procedure
+                                                             <------ LSReq LSA A, Origin C, Seq X
+                                              LSA A, Origin C,
+                                              Seq:X          ------->
+                                                             <------- LSA  A, Origin C, Seq:Y
+                                              LSA A, Origin C, -------> Mark LSReq 
+                                              Seq:Y+1                    LSAA, Origin C, Seq X 
+                                                                          Satisfied
+                                            
+                         </artwork>
+                         </figure>
+                         As described in the figure <xref target ='seq_dgm'/> above, E places LSReq with Sequence number X but
+                         waits until the LSA with sequence number Y+1 arrives. As the LSA is still in the LSReq queue, the adjacency
+                         will remain in Exchange state and will not move to Full state. All the neighbors of the restarting routers 
+                         hold the neighborship in Exchange state and do not make it Full until the stale LSA is replaced with the new LSA
+                         with higher sequence number than the stale LSA. This ensures that other routers in the network do not compute
+                         a path through the restarting router as the backlink check will not be satisfied.
+                    </t>
+               </section>
 
         <section title="Glossary" >
             <dl newline="true" spacing="normal">
