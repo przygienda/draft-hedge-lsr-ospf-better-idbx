@@ -2,17 +2,31 @@
 
 
 
-Network Working Group                                      A. Przygienda
-Internet-Draft                                                   Juniper
-Intended status: Standards Track                           30 March 2023
-Expires: 1 October 2023
+Network Working Group                                           S. Hegde
+Internet-Draft                                             A. Przygienda
+Intended status: Informational                                   Juniper
+Expires: 7 October 2023                                        A. Lindem
+                                                                    LabN
+                                                            5 April 2023
 
 
                           Trusted Domain SRv6
-                draft-ietf-raviolli-trusted-domain-srv6
+                    draft-hegde-lsr-ospf-better-idbx
 
 Abstract
 
+   When an OSPF router undergoes restart, the previous incarnations of
+   the LSAs belonging to that router still linger in the database of
+   other routers in the OSPF domain until they are Maxaged.  When the
+   restarting router comes back, neighboring routers establish adjacency
+   with the restarting router while the restarting router is still
+   bringing-up the interfaces and adjacencies.  The combination of stale
+   LSA of the restarting router in the database and the new LSA from
+   adjacenct routers may get interpreted as, connectivity being
+   established through the restarting router.  This incorrect
+   interpretation may cause traffic blackhole.  This document suggests
+   improvements in the OSPF database exchange process to prevent traffic
+   blackhole due to stale LSA misinterpretation.
 
 Requirements Language
 
@@ -35,7 +49,14 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 1 October 2023.
+   This Internet-Draft will expire on 7 October 2023.
+
+
+
+Hegde, et al.            Expires 7 October 2023                 [Page 1]
+
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
+
 
 Copyright Notice
 
@@ -51,75 +72,193 @@ Copyright Notice
    described in Section 4.e of the Trust Legal Provisions and are
    provided without warranty as described in the Revised BSD License.
 
-
-
-Przygienda               Expires 1 October 2023                 [Page 1]
-
-Internet-Draft    draft-ietf-hedge-lsr-ospf-better-idbx       March 2023
-
-
 Table of Contents
 
-   1.  Description . . . . . . . . . . . . . . . . . . . . . . . . .   2
-   2.  Glossary  . . . . . . . . . . . . . . . . . . . . . . . . . .   2
-   3.  . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   2
-   4.  Registry Considerations . . . . . . . . . . . . . . . . . . .   2
-     4.1.  IANA Considerations . . . . . . . . . . . . . . . . . . .   2
-   5.  Security Considerations . . . . . . . . . . . . . . . . . . .   2
-   6.  Contributors  . . . . . . . . . . . . . . . . . . . . . . . .   2
-   7.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   2
-     7.1.  Informative References  . . . . . . . . . . . . . . . . .   2
-     7.2.  Normative References  . . . . . . . . . . . . . . . . . .   2
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .   3
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+   2.  Solution  . . . . . . . . . . . . . . . . . . . . . . . . . .   3
+     2.1.  Example . . . . . . . . . . . . . . . . . . . . . . . . .   3
+   3.  Glossary  . . . . . . . . . . . . . . . . . . . . . . . . . .   4
+   4.  . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   4
+   5.  Registry Considerations . . . . . . . . . . . . . . . . . . .   4
+     5.1.  IANA Considerations . . . . . . . . . . . . . . . . . . .   4
+   6.  Security Considerations . . . . . . . . . . . . . . . . . . .   5
+   7.  Contributors  . . . . . . . . . . . . . . . . . . . . . . . .   5
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   5
+     8.1.  Informative References  . . . . . . . . . . . . . . . . .   5
+     8.2.  Normative References  . . . . . . . . . . . . . . . . . .   5
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   5
 
-1.  Description
+1.  Introduction
+
+   When an OSPF [RFC2328] router restarts, it's stale LSAs are left in
+   the database of the other routers in the OSPF domain until the LSAs
+   are MaxAged.  The stale Router LSA contains links to all the
+   neighbors that had adjacencies Up before the router restarted.
+
+                               ----------C--------
+                               |                 |
+                         A-----B                 E-----F
+                               |                 |
+                               --------D---------
 
 
-2.  Glossary
+
+                           Figure 1: OSPF Network
+
+
+
+
+
+Hegde, et al.            Expires 7 October 2023                 [Page 2]
+
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
+
+
+   Figure 1 describes an OSPF network.  When C undergoes restart, the
+   other routers in the domain hold the stale LSA of Router C in their
+   database.  The stale LSA may have links to B and E, which represents
+   the topology of C before it went down.  When C comes up, it initiates
+   database exchange process with B and E.  B and E have C's stale LSA
+   with higher sequence number in their database and assume it is the
+   latest copy and bring up the adjacency with C and go to Full state.
+   Based on C's Stale LSA having B and E link in the LSA, back-link
+   check is satisfied and B and E update their routing table to point to
+   C.  This may cause traffic blackhole as C may not have the adjacency
+   up and the routes programmed correctly.
+
+2.  Solution
+
+   The database exchange procedure from [RFC2328] section 7.2 is updated
+   and additional procedure added as below.
+
+   During Database exchange when a router receives an LSA from the
+   neighbor where, neighbor is the originator of the LSA and the
+   sequence number of the LSA is smaller than it's own database copy,
+   then the router marks it's own database copy as stale.  Router sends
+   LSReq for the LSA (the one marked stale) with the received sequence
+   number.  Until an LSA with the sequence number greater than it's own
+   database copy is received, this LSReq MUST not be satisfied and the
+   neighborship MUST NOT move to Full state.
+
+2.1.  Example
+
+   Let us take an example when C is restarting.  Let us take an example
+   where C has originated an LSA with sequence number Y before
+   restarting.  After restarting C orginates the same LSA with sequence
+   number X where X < Y.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hegde, et al.            Expires 7 October 2023                 [Page 3]
+
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
+
+
+                                                  C-----------------E
+
+                                              DBD: LSA A origin:C  ------->
+                                                  Sequence:X
+                                                                      DBD: LSA A Origin:C
+                                                              <------       Sequence:Y
+                                              LSReq LSA A,
+                                              origin C, Seq Y----->
+                                                                    Modified Procedure
+                                                             <------ LSReq LSA A, Origin C, Seq X
+                                              LSA A, Origin C,
+                                              Seq:X          ------->
+                                                             <------- LSA  A, Origin C, Seq:Y
+                                              C re-originating self LSA
+                                              LSA A, Origin C, -------> Mark LSReq
+                                              Seq:Y+1                    LSAA, Origin C, Seq X
+                                                                          Satisfied
+
+
+
+            Figure 2: Modified Database Exchange Procedure
+
+   As described in the figure Figure 2 above, E places LSReq with
+   Sequence number X but waits until the LSA with sequence number Y+1
+   arrives.  As the LSA is still in the LSReq queue, the adjacency will
+   remain in Loading state and will not move to Full state.  All the
+   neighbors of the restarting routers hold the neighborship in Loading
+   state and do not make it Full until the stale LSA is replaced with
+   the new LSA with higher sequence number than the stale LSA.  This
+   ensures that other routers in the network do not compute a path
+   through the restarting router.
+
+3.  Glossary
 
    Fail-Closed Domain:
       synonymous with a Trusted Domain.
 
-3.  .
+4.  .
 
-4.  Registry Considerations
 
-4.1.  IANA Considerations
+5.  Registry Considerations
+
+5.1.  IANA Considerations
 
    No IANA Considerations
 
-5.  Security Considerations
 
 
-6.  Contributors
 
 
-7.  References
 
-7.1.  Informative References
+Hegde, et al.            Expires 7 October 2023                 [Page 4]
+
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
 
-7.2.  Normative References
+
+6.  Security Considerations
+
+
+7.  Contributors
+
+
+8.  References
+
+8.1.  Informative References
+
+8.2.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
 
-
-
-
-
-Przygienda               Expires 1 October 2023                 [Page 2]
-
-Internet-Draft    draft-ietf-hedge-lsr-ospf-better-idbx       March 2023
-
+   [RFC2328]  Moy, J., "OSPF Version 2", STD 54, RFC 2328,
+              DOI 10.17487/RFC2328, April 1998,
+              <https://www.rfc-editor.org/info/rfc2328>.
 
    [RFC8402]  Filsfils, C., Ed., Previdi, S., Ed., Ginsberg, L.,
               Decraene, B., Litkowski, S., and R. Shakir, "Segment
               Routing Architecture", RFC 8402, DOI 10.17487/RFC8402,
               July 2018, <https://www.rfc-editor.org/info/rfc8402>.
 
-Author's Address
+Authors' Addresses
+
+   Shraddha Hegde
+   Juniper
+   India
+   Email: shraddha@juniper.net
+
 
    Tony Przygienda
    Juniper
@@ -129,40 +268,13 @@ Author's Address
    Email: prz@juniper.net
 
 
+   Acee Lindem
+   LabN
+   Email: acee.ietf@gmail.com
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Przygienda               Expires 1 October 2023                 [Page 3]
+Hegde, et al.            Expires 7 October 2023                 [Page 5]

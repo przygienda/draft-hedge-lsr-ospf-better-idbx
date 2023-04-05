@@ -146,9 +146,10 @@
                       MUST NOT move to Full state.</t>
                <section title="Example" anchor='sec_ex'>
                     <t> Let us take an example when C is restarting. Let us take an example where C has originated an LSA with sequence number
-                         Y before restarting. After restarting C orginates the same LSA with sequence number X where X < Y.
+                         Y before restarting. After restarting C orginates the same LSA with sequence number X where X &lt; Y.
                          <figure anchor="seq_dgm" title="Modified Database Exchange Procedure">
                          <artwork>
+                             <![CDATA[
                               
                                                   C-----------------E                                                  
                               
@@ -168,6 +169,7 @@
                                               Seq:Y+1                    LSAA, Origin C, Seq X 
                                                                           Satisfied
                                             
+                         ]]>
                          </artwork>
                          </figure>
                          As described in the figure <xref target ='seq_dgm'/> above, E places LSReq with Sequence number X but
@@ -178,6 +180,7 @@
                          a path through the restarting router. 
                     </t>
                </section>
+          </section>
 
         <section title="Glossary" >
             <dl newline="true" spacing="normal">
@@ -193,10 +196,8 @@
         </section>
 
         <section title=".">
-
+<t></t>
         </section>
-
-
 
 
         <section anchor="registry" title="Registry Considerations">
