@@ -58,6 +58,27 @@
                 <uri/>
             </address>
         </author>
+         <author fullname="Acee Lindem" initials="A." surname="Lindem">
+            <organization>LabN</organization>
+            <address>
+                <postal>
+                    <street>
+                    </street>
+                    <city></city>
+                    <region>
+                    </region>
+                    <code/>
+                    <country>
+                    </country>
+                </postal>
+                <phone/>
+                <facsimile/>
+                <email>acee.ietf@gmail.com
+                </email>
+                <uri/>
+            </address>
+        </author>
+         
         <date year="2023"/>
         <abstract>
             <t>
@@ -102,11 +123,11 @@
                  </artwork> 
                  </figure>
                  <xref target ='Topology_1'/> describes an OSPF network. When C undergoes restart, the other routers
-                 in the domain hold the stale LSA on Router C in their database. The stale LSA may have links to B and E,
-                 which represents the topology of C before it went for restart. When C comes up,
+                 in the domain hold the stale LSA of Router C in their database. The stale LSA may have links to B and E,
+                 which represents the topology of C before it went down. When C comes up,
                  it initiates database exchange process with B and E. B and E have C's stale LSA with higher 
                  sequence number in their database and assume it is the latest copy and bring up the adjacency 
-                 with C and go to Full state. Based on C's Stale LSA having B and E link in the LSA back-link check is
+                 with C and go to Full state. Based on C's Stale LSA having B and E link in the LSA, back-link check is
                  satisfied and B and E update their routing table to point to C. This may cause traffic blackhole 
                  as C may not have the adjacency up and the routes programmed correctly.
                  
@@ -114,12 +135,13 @@
         </section>
           <section title="Solution" anchor='sec_solution'>
                <t>
-                    The database exchange procedure form <xref target ='RFC2328'/> section 7.2 is updated and additional
+                    The database exchange procedure from <xref target ='RFC2328'/> section 7.2 is updated and additional
                     procedure added as below.</t>
                  <t>   
                     During Database exchange when a router receives an LSA from the neighbor where, neighbor is the originator
                     of the LSA and the sequence number of the LSA is smaller than it's own database copy, then the router marks
-                    it's own database copy as stale and sends LSReq for the LSA with the received sequence number. Until an LSA with
+                    it's own database copy as stale. Router sends LSReq for the LSA (the one marked stale) with the
+                      received sequence number. Until an LSA with
                     the sequence number greater than it's own database copy is received, this LSReq MUST not be satisfied and the neighborship
                       MUST NOT move to Full state.</t>
                <section title="Example" anchor='sec_ex'>
@@ -141,6 +163,7 @@
                                               LSA A, Origin C,
                                               Seq:X          ------->
                                                              <------- LSA  A, Origin C, Seq:Y
+                                              C re-originating self LSA                        
                                               LSA A, Origin C, -------> Mark LSReq 
                                               Seq:Y+1                    LSAA, Origin C, Seq X 
                                                                           Satisfied
@@ -149,10 +172,10 @@
                          </figure>
                          As described in the figure <xref target ='seq_dgm'/> above, E places LSReq with Sequence number X but
                          waits until the LSA with sequence number Y+1 arrives. As the LSA is still in the LSReq queue, the adjacency
-                         will remain in Exchange state and will not move to Full state. All the neighbors of the restarting routers 
-                         hold the neighborship in Exchange state and do not make it Full until the stale LSA is replaced with the new LSA
+                         will remain in Loading state and will not move to Full state. All the neighbors of the restarting routers 
+                         hold the neighborship in Loading state and do not make it Full until the stale LSA is replaced with the new LSA
                          with higher sequence number than the stale LSA. This ensures that other routers in the network do not compute
-                         a path through the restarting router as the backlink check will not be satisfied.
+                         a path through the restarting router. 
                     </t>
                </section>
 
@@ -205,6 +228,8 @@
         <references title="Normative References">
             <xi:include href="https://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
             <xi:include href="https://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.8402.xml"/>
+            <xi:include href="https://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2328.xml"/>
+           
 
         </references>
 
