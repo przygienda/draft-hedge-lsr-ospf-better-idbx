@@ -84,9 +84,9 @@
         <date year="2023"/>
         <abstract>
             <t>
-                 When an OSPF router undergoes restart, previous instances LSAs belonging to that router
-                 may still linger in the databases of other routers in the OSPF domain until such LSAs are aged out.
-                Hence, when the restarting
+                 When an OSPF router undergoes restart, previous instances of LSAs belonging to that router
+                 may remain in the databases of other routers in the OSPF domain until such LSAs are aged out.
+                 Hence, when the restarting
                  router joins the network again, neighboring routers re-establish adjacencies while the
                  restarting router is still bringing-up its interfaces and adjacencies and generates LSAs with
                  sequence numbers that may be lower than the stale LSAs. Such stale LSAs may be interpreted as bi-directional
@@ -113,7 +113,7 @@
             <t>
                When an OSPF <xref target ='RFC2328'/> router restarts, its stale LSAs are left in the
                database of other  routers in the OSPF domain until the LSAs are aged out either
-               intentionally or by the LSA age elasping. The stale
+               intentionally or by the LSA age elapsing. The stale
                Router LSA can contain links to all the neighbors that had adjacencies Up before the router
                restarted.
                  <figure anchor="Topology_1" title="OSPF Network">
@@ -143,20 +143,24 @@
           <section title="Solution" anchor='sec_solution'>
                <t>
                     The database exchange procedure from <xref target ='RFC2328'/> section 7.2 is extended with additional
-                    procedure added.</t>
-                 <t>   
-                    During Database exchange, when a router receives an LSA from the neighbor for which such neighbor is the originator
-                    of the LSA and the sequence number of the LSA is smaller than its own database copy, the receiving router marks
-                    its own database copy as stale. Router adds the newly stale LSA to the Link State Request List. 
-                    Until an LSA with the sequence number greater than its own database copy is received (or strictly speaking, a "newer"
-                    LSA based on usual comparison), this LSA must not be removed from the Link State Request list and the adjacency FSM
-                    MUST NOT transition to Full state.</t>
+                    constraints to prevent the a router transitioning to Full state with a neighbor router when it has
+                    stale LSAs originated by the neighbor in its Link State Database (LSDB).
+               </t>
+               <t>   
+                 During Database exchange, when a router receives an LSA from the neighbor for which such neighbor is the originator
+                 of the LSA and the sequence number of the LSA is smaller than the sequence number of its database copy, the receiving
+                 router marks its database copy as stale. The router will add this stale LSA to the Link State Request List for the
+                 neighbor. This LSA MUST NOT be removed from the Link State Request list and the adjacency FSM
+                 MUST NOT transition to Full state until an LSA with a sequence number greater than its own database copy is
+                 received (or strictly speaking, a "more recent" LSA).
+               </t>
                <section title="Example" anchor='sec_ex'>
-                    <t>  <xref target ='seq_dgm'/> provides an example of C restarting having originated an LSA with sequence number
-                         Y before. After restarting C originates the same LSA with sequence number X where X &lt; Y since
-                        it is not aware of existence of version X yet.
-                         <figure anchor="seq_dgm" title="Modified Database Exchange Procedure">
-                         <artwork>
+                 <t>
+                   <xref target ='seq_dgm'/> provides an example of C restarting having originated an LSA with sequence number
+                   Y before. After restarting C originates the same LSA with sequence number X where X &lt; Y since
+                   it is not aware of existence of version X yet.
+                   <figure anchor="seq_dgm" title="Modified Database Exchange Procedure">
+                     <artwork>
                              <![CDATA[
                               
           C-----------------E
