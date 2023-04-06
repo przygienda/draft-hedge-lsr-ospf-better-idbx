@@ -14,7 +14,7 @@
      obsoletes="" submissionType="IETF" updates="" xml:lang="en">
     <front>
         <title abbrev="draft-hegde-lsr-ospf-better-idbx">
-            Trusted Domain SRv6
+            Improved OSPF database Exchange Procedure
         </title>
 
         <author fullname="Shraddha Hegde" initials="S." surname="Hegde">
