@@ -6,7 +6,7 @@ Network Working Group                                           S. Hegde
 Internet-Draft                                             A. Przygienda
 Intended status: Informational                                   Juniper
 Expires: 7 October 2023                                        A. Lindem
-                                                                    LabN
+                                                     LabN Consulting LLC
                                                             5 April 2023
 
 
@@ -15,27 +15,29 @@ Expires: 7 October 2023                                        A. Lindem
 
 Abstract
 
-   When an OSPF router undergoes restart, the previous incarnations of
-   the LSAs belonging to that router may still linger in the database of
-   other routers in the OSPF domain until such LSAs are aged out.
-   Hence, when the restarting router joins the network again,
-   neighboring routers re-establish adjacencies while the restarting
-   router is still bringing-up its interfaces and adjacencies and
-   generates LSAs with version numbers that may be lower than the stale
-   LSAs.  Such stale LSAs may be interpreted as bi-directional
-   connectivity before the initial database exchanges are finished and
-   genuine connectivity exists.  Such incorrect interpretation may lead
-   to, among others, to transient traffic blackholes.  This document
+   When an OSPF router undergoes restart, previous instances of LSAs
+   belonging to that router may remain in the databases of other routers
+   in the OSPF domain until such LSAs are aged out.  Hence, when the
+   restarting router joins the network again, neighboring routers re-
+   establish adjacencies while the restarting router is still bringing-
+   up its interfaces and adjacencies and generates LSAs with sequence
+   numbers that may be lower than the stale LSAs.  Such stale LSAs may
+   be interpreted as bi-directional connectivity before the initial
+   database exchanges are finished and genuine bi-directional LSA
+   connectivity exists.  Such incorrect interpretation may lead to,
+   among other thiegs, transient traffic packect drops.  This document
    suggests improvements in the OSPF database exchange process to
-   prevent such problems due to stale LSA misinterpretation.  The
-   solution does not precondition changes in the existing standard but
-   presents an extension that will prevent the scenario.
+   prevent such problems due to stale LSA utilization.  The solution
+   does not preclude changes in the existing standard but presents an
+   extension that will prevent this scenario.
 
 Requirements Language
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
-   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-   document are to be interpreted as described in RFC 2119 [RFC2119].
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
 
 Status of This Memo
 
@@ -46,8 +48,6 @@ Status of This Memo
    Task Force (IETF).  Note that other groups may also distribute
    working documents as Internet-Drafts.  The list of current Internet-
    Drafts is at https://datatracker.ietf.org/drafts/current/.
-
-
 
 
 
@@ -84,23 +84,23 @@ Table of Contents
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
    2.  Solution  . . . . . . . . . . . . . . . . . . . . . . . . . .   3
      2.1.  Example . . . . . . . . . . . . . . . . . . . . . . . . .   3
-   3.  Glossary  . . . . . . . . . . . . . . . . . . . . . . . . . .   4
-   4.  Registry Considerations . . . . . . . . . . . . . . . . . . .   4
-     4.1.  IANA Considerations . . . . . . . . . . . . . . . . . . .   4
-   5.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
-   6.  Contributors  . . . . . . . . . . . . . . . . . . . . . . . .   5
-   7.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   5
-     7.1.  Informative References  . . . . . . . . . . . . . . . . .   5
-     7.2.  Normative References  . . . . . . . . . . . . . . . . . .   5
+   3.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   4
+   4.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
+   5.  Contributors  . . . . . . . . . . . . . . . . . . . . . . . .   4
+   6.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   4
+     6.1.  Informative References  . . . . . . . . . . . . . . . . .   4
+     6.2.  Normative References  . . . . . . . . . . . . . . . . . .   5
    Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   5
 
 1.  Introduction
 
-   When an OSPF [RFC2328] router restarts, it's stale LSAs are left in
-   the database of the other routers in the OSPF domain until the LSAs
-   are aged out either intentionally or by natural decay over time.  The
-   stale Router LSA can contain links to all the neighbors that had
+   When an OSPF [RFC2328] router restarts, its stale LSAs are left in
+   the database of other routers in the OSPF domain until the LSAs are
+   aged out either intentionally or by the LSA age elapsing.  The stale
+   Router LSA can contain links to all the neighbors that had
    adjacencies Up before the router restarted.
+
+
 
 
 
@@ -128,30 +128,33 @@ Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
    restart that does not generate purges, the other routers in the
    domain will hold the stale LSA of Router C in their database.  The
    stale LSA may have links to B and E, which represents the topology of
-   C before it went down.  When C restarts again, it initiates database
-   exchange process with B and E.  B and E may have C's stale LSA with
-   higher sequence number in their database than the new ones originated
-   by C and hence assume this being the latest copy successively bringin
-   up the adjacency with C and transition to Full state as well.  Based
-   on C's Stale LSA having B and E link in the LSA, back-link check is
-   satisfied and B and E update their routing table to point to C.  This
-   may cause traffic blackhole as C may not have the adjacency up and
-   all LSAs in place to program the necessary routes correctly.
+   C before it went down.  When C restarts again, it initiates the
+   database exchange process with B and E.  B and E may have C's stale
+   LSA with a higher sequence number in their database than the new ones
+   originated by C and hence assume this is latest copy, successively
+   bringing up the adjacency with C, and transitioning to Full state.
+   Based on C's Stale LSA having LSA links to B and E, the Shortest Path
+   First (SPF) back-link check is satisfied and B and E update their
+   routing table to point to C.  This may cause C to drop this traffic
+   as C may not have all its previous adjacencies up and all LSAs in
+   place to correctly compute the necessary routes.
 
 2.  Solution
 
    The database exchange procedure from [RFC2328] section 7.2 is
-   extended and additional optional procedure added as below.
+   extended with additional constraints to prevent an OSPF router from
+   transitioning to Full state when it has stale LSAs originated by the
+   database exchange neighbor in its Link State Database (LSDB).
 
-   During Database exchange when a router receives an LSA from the
+   During Database exchange, when a router receives an LSA from the
    neighbor for which such neighbor is the originator of the LSA and the
-   sequence number of the LSA is smaller than its own database copy, the
-   receiving router marks its own database copy as stale.  Router sends
-   LSReq for such newly stale marked LSA with the received sequence
-   number.  Until an LSA with the sequence number greater than its own
-   database copy is received (or strictly speaking, _newer_ LSA based on
-   usual comparison), this LSReq MUST not be satisfied and the adjacency
-   FSM MUST NOT move to Full state.
+   sequence number of the LSA is smaller than the sequence number of its
+   database copy, the receiving router marks its database copy as stale.
+   The router will add this stale LSA to the Link State Request List for
+   the neighbor.  This LSA MUST NOT be removed from the Link State
+   Request list and the adjacency FSM MUST NOT transition to Full state
+   until an LSA with a sequence number greater than its own database
+   copy is received (or strictly speaking, a "more recent" LSA).
 
 2.1.  Example
 
@@ -159,9 +162,6 @@ Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
    with sequence number Y before.  After restarting C originates the
    same LSA with sequence number X where X < Y since it is not aware of
    existence of version X yet.
-
-
-
 
 
 
@@ -202,21 +202,21 @@ Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
    the new LSA with higher sequence number than the stale LSA.  This
    ensures that other routers in the network do not compute a path
    through the restarting router since they cannot satisfy the bi-
-   directionality condition in reachability computations.
+   directionality condition in SPF computations.
 
-3.  Glossary
-
-   - 
-      -
-
-4.  Registry Considerations
-
-4.1.  IANA Considerations
+3.  IANA Considerations
 
    No IANA Considerations
 
-5.  Security Considerations
+4.  Security Considerations
 
+
+5.  Contributors
+
+
+6.  References
+
+6.1.  Informative References
 
 
 
@@ -226,14 +226,7 @@ Hegde, et al.            Expires 7 October 2023                 [Page 4]
 Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
 
 
-6.  Contributors
-
-
-7.  References
-
-7.1.  Informative References
-
-7.2.  Normative References
+6.2.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
@@ -244,10 +237,9 @@ Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
               DOI 10.17487/RFC2328, April 1998,
               <https://www.rfc-editor.org/info/rfc2328>.
 
-   [RFC8402]  Filsfils, C., Ed., Previdi, S., Ed., Ginsberg, L.,
-              Decraene, B., Litkowski, S., and R. Shakir, "Segment
-              Routing Architecture", RFC 8402, DOI 10.17487/RFC8402,
-              July 2018, <https://www.rfc-editor.org/info/rfc8402>.
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
 
 Authors' Addresses
 
@@ -266,8 +258,16 @@ Authors' Addresses
 
 
    Acee Lindem
-   LabN
+   LabN Consulting LLC
+   301 Midenhall Way
+   Cary, North Carolina
+   United States of America
    Email: acee.ietf@gmail.com
+
+
+
+
+
 
 
 

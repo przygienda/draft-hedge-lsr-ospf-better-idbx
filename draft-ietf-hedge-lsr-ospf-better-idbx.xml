@@ -142,9 +142,9 @@
         </section>
           <section title="Solution" anchor='sec_solution'>
                <t>
-                    The database exchange procedure from <xref target ='RFC2328'/> section 7.2 is extended with additional
-                    constraints to prevent the a router transitioning to Full state with a neighbor router when it has
-                    stale LSAs originated by the neighbor in its Link State Database (LSDB).
+                 The database exchange procedure from <xref target ='RFC2328'/> section 7.2 is extended with additional
+                 constraints to prevent an OSPF router from transitioning to Full state when it has
+                 stale LSAs originated by the database exchange neighbor in its Link State Database (LSDB).
                </t>
                <t>   
                  During Database exchange, when a router receives an LSA from the neighbor for which such neighbor is the originator
