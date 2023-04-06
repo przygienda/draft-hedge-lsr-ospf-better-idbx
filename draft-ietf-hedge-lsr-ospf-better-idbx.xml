@@ -14,7 +14,7 @@
      obsoletes="" submissionType="IETF" updates="" xml:lang="en">
     <front>
         <title abbrev="draft-hegde-lsr-ospf-better-idbx">
-            Improved OSPF database Exchange Procedure
+            Improved OSPF Database Exchange Procedure
         </title>
 
         <author fullname="Shraddha Hegde" initials="S." surname="Hegde">
