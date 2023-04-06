@@ -92,7 +92,7 @@
                  sequence numbers that may be lower than the stale LSAs. Such stale LSAs may be interpreted as bi-directional
                  connectivity before the initial database exchanges are finished and genuine bi-directional LSA
                  connectivity exists.
-                 Such incorrect interpretation may lead to, among other thigs, transient traffic unreachability.
+                 Such incorrect interpretation may lead to, among other thiegs, transient traffic packect drops.
                  This document suggests improvements in the OSPF database exchange
                  process to prevent such problems due to stale LSA utilization. The solution does not preclude
                  changes in the existing standard but presents an extension that will prevent this scenario.
@@ -185,14 +185,14 @@
                          </artwork>
                          </figure>
                             As shown in figure <xref target ='seq_dgm'/> above, E originates LSReq with Sequence number X but
-                         waits until the LSA with sequence number Y+1 (or strictly speaking, an LSA that compares as newer
-                        to the one it holds) arrives. As the LSA is still in the LSReq queue, the adjacency
-                         will remain in Loading state and will not move to Full state. All the neighbors of the restarting routers 
-                         hold the neighborship in Loading state and do not make it Full until the stale LSA is replaced with the new LSA
-                         with higher sequence number than the stale LSA. This ensures that other routers in the network do not compute
-                         a path through the restarting router since they cannot satisfy the bi-directionality condition
-                        in reachability computations.
-                    </t>
+                            waits until the LSA with sequence number Y+1 (or strictly speaking, an LSA that compares as newer
+                            to the one it holds) arrives. As the LSA is still in the LSReq queue, the adjacency
+                            will remain in Loading state and will not move to Full state. All the neighbors of the restarting routers 
+                            hold the neighborship in Loading state and do not make it Full until the stale LSA is replaced with the new LSA
+                            with higher sequence number than the stale LSA. This ensures that other routers in the network do not compute
+                            a path through the restarting router since they cannot satisfy the bi-directionality condition
+                            in SPF computations.
+                 </t>
                </section>
           </section>
 
