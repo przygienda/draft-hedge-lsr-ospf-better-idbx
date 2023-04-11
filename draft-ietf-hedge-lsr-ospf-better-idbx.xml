@@ -9,7 +9,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx"
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-00"
      ipr="trust200902"
      obsoletes="" submissionType="IETF" updates="" xml:lang="en">
     <front>
