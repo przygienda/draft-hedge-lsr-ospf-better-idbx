@@ -80,7 +80,7 @@
                 <uri/>
             </address>
         </author>
-         
+
         <date year="2023"/>
         <abstract>
             <t>
@@ -92,7 +92,7 @@
                  sequence numbers that may be lower than the stale LSAs. Such stale LSAs may be interpreted as bi-directional
                  connectivity before the initial database exchanges are finished and genuine bi-directional LSA
                  connectivity exists.
-                 Such incorrect interpretation may lead to, among other thiegs, transient traffic packect drops.
+                 Such incorrect interpretation may lead to, among other things, transient traffic packet drops.
                  This document suggests improvements in the OSPF database exchange
                  process to prevent such problems due to stale LSA utilization. The solution does not preclude
                  changes in the existing standard but presents an extension that will prevent this scenario.
@@ -109,12 +109,12 @@
     <middle>
 
 
-        <section title="Introduction" anchor='sec_introduction'>        
+        <section title="Introduction" anchor='sec_introduction'>
             <t>
                When an OSPF <xref target ='RFC2328'/> router restarts, its stale LSAs are left in the
                database of other  routers in the OSPF domain until the LSAs are aged out either
                intentionally or by the LSA age elapsing. The stale
-               Router LSA can contain links to all the neighbors that had adjacencies Up before the router
+               Router LSA can contain links to all the neighbors that had Full adjacencies before the router
                restarted.
                  <figure anchor="Topology_1" title="OSPF Network">
                  <artwork>
@@ -122,10 +122,10 @@
                             |                 |
                       A-----B                 E-----F
                             |                 |
-                            --------D---------                   
-                      
-                      
-                 </artwork> 
+                            --------D---------
+
+
+                 </artwork>
                  </figure>
                  <xref target ='Topology_1'/> shows a very simple OSPF network. In case of C undergoing restart that
                  does not generate purges, the other routers
@@ -146,10 +146,10 @@
                  constraints to prevent an OSPF router from transitioning to Full state when it has
                  stale LSAs originated by the database exchange neighbor in its Link State Database (LSDB).
                </t>
-               <t>   
+               <t>
                  During Database exchange, when a router receives an LSA from the neighbor for which such neighbor is the originator
                  of the LSA and the sequence number of the LSA is smaller than the sequence number of its own database copy, the receiving
-                 router marks its database copy as stale. 
+                 router marks its database copy as stale.
 				 This document proposes to create a new LSA list called "Stale LSA List".
 				 This list is created on a per neighbor basis and resembles the "LS Request List", the difference being
 				 LS Request messages are not sent for stale LSAs.
@@ -158,7 +158,7 @@
                  neighbor. This LSA MUST NOT be removed from the Stale LSA list and the adjacency FSM
                  MUST NOT transition to Full state until an LSA with a sequence number greater than its own database copy is
                  received (or strictly speaking, a "more recent" LSA).
-				 The Stale LSA List cleanup procedures follow the LSRequest list cleanup procedures as described in 
+				 The Stale LSA List cleanup procedures follow the LSRequest list cleanup procedures as described in
 				  <xref target ='RFC2328'/>
                </t>
                <section title="Example" anchor='sec_ex'>
@@ -169,7 +169,7 @@
                    <figure anchor="seq_dgm" title="Modified Database Exchange Procedure">
                      <artwork>
                              <![CDATA[
-                              
+
           C-----------------E
 
       DBD: LSA A origin:C  ------->
@@ -180,24 +180,27 @@
       origin C       ----->
                             Modified Procedure
                      <------ Add LSA A to Stale LSA List
-    
+
                      <------- LSA  A, Origin C, Seq:Y
       C re-originating self LSA
-      LSA A, Origin C, -------> Remove Stale 
+      LSA A, Origin C, -------> Remove Stale
       Seq:Y+1                    LSA A, Origin C
-	                             From Stale LSA List.
-								 BRing-up adjacency to Full state if 
-								 Stale LSA List is empty
-	                             
-                                            
+	                         From Stale LSA List,
+
+                                 Bring adjacency to Full state if
+                                 both LS Request list and Stale LSA
+                                 list are empty.
+
+
                          ]]>
                          </artwork>
                          </figure>
                             As shown in figure <xref target ='seq_dgm'/> above, E originates LSReq with Sequence number X but
                             waits until the LSA with sequence number Y+1 (or strictly speaking, an LSA that compares as newer
                             to the one it holds) arrives. As the LSA is still in the Stale LSA List, the adjacency
-                            will remain in Loading state and will not move to Full state. All the neighbors of the restarting routers 
-                            hold the neighborship in Loading state and do not make it Full until the stale LSA is replaced with the new LSA
+                            will remain in Loading state and will not move to Full state. All the neighbors of the restarting routers
+                            hold the neighbor FSM in Loading state and do not transition to Full state until the stale
+                            LSA is replaced with the new LSA
                             with higher sequence number than the stale LSA. This ensures that other routers in the network do not compute
                             a path through the restarting router since they cannot satisfy the bi-directionality condition
                             in SPF computations.
@@ -230,7 +233,7 @@
             <xi:include href="https://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
             <xi:include href="https://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2328.xml"/>
             <xi:include href="https://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
-           
+
 
         </references>
 
