@@ -9,7 +9,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-00"
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-01"
      ipr="trust200902"
      obsoletes="" submissionType="IETF" updates="" xml:lang="en">
     <front>
@@ -148,11 +148,18 @@
                </t>
                <t>   
                  During Database exchange, when a router receives an LSA from the neighbor for which such neighbor is the originator
-                 of the LSA and the sequence number of the LSA is smaller than the sequence number of its database copy, the receiving
-                 router marks its database copy as stale. The router will add this stale LSA to the Link State Request List for the
-                 neighbor. This LSA MUST NOT be removed from the Link State Request list and the adjacency FSM
+                 of the LSA and the sequence number of the LSA is smaller than the sequence number of its own database copy, the receiving
+                 router marks its database copy as stale. 
+				 This document proposes to create a new LSA list called "Stale LSA List".
+				 This list is created on a per neighbor basis and resembles the "LS Request List", the difference being
+				 LS Request messages are not sent for stale LSAs.
+				 The router creates a "Stale LSA List" for this neighbor and
+				 adds stale LSA to the Stale LSA List for the
+                 neighbor. This LSA MUST NOT be removed from the Stale LSA list and the adjacency FSM
                  MUST NOT transition to Full state until an LSA with a sequence number greater than its own database copy is
                  received (or strictly speaking, a "more recent" LSA).
+				 The Stale LSA List cleanup procedures follow the LSRequest list cleanup procedures as described in 
+				  <xref target ='RFC2328'/>
                </t>
                <section title="Example" anchor='sec_ex'>
                  <t>
@@ -170,23 +177,25 @@
                               DBD: LSA A Origin:C
                       <------       Sequence:Y
       LSReq LSA A,
-      origin C, Seq Y----->
+      origin C       ----->
                             Modified Procedure
-                     <------ LSReq LSA A, Origin C, Seq X
-      LSA A, Origin C,
-      Seq:X          ------->
+                     <------ Add LSA A to Stale LSA List
+    
                      <------- LSA  A, Origin C, Seq:Y
       C re-originating self LSA
-      LSA A, Origin C, -------> Mark LSReq
-      Seq:Y+1                    LSAA, Origin C, Seq X
-                                  Satisfied
+      LSA A, Origin C, -------> Remove Stale 
+      Seq:Y+1                    LSA A, Origin C
+	                             From Stale LSA List.
+								 BRing-up adjacency to Full state if 
+								 Stale LSA List is empty
+	                             
                                             
                          ]]>
                          </artwork>
                          </figure>
                             As shown in figure <xref target ='seq_dgm'/> above, E originates LSReq with Sequence number X but
                             waits until the LSA with sequence number Y+1 (or strictly speaking, an LSA that compares as newer
-                            to the one it holds) arrives. As the LSA is still in the LSReq queue, the adjacency
+                            to the one it holds) arrives. As the LSA is still in the Stale LSA List, the adjacency
                             will remain in Loading state and will not move to Full state. All the neighbors of the restarting routers 
                             hold the neighborship in Loading state and do not make it Full until the stale LSA is replaced with the new LSA
                             with higher sequence number than the stale LSA. This ensures that other routers in the network do not compute
