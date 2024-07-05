@@ -9,7 +9,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-01"
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-02"
      ipr="trust200902"
      obsoletes="" submissionType="IETF" updates="" xml:lang="en">
     <front>
@@ -81,7 +81,7 @@
             </address>
         </author>
 
-        <date year="2023"/>
+        <date year="2024"/>
         <abstract>
             <t>
                  When an OSPF router undergoes restart, previous instances of LSAs belonging to that router
@@ -133,34 +133,98 @@
                  links to B and E, which represents the topology of C before it went down. When C restarts again,
                  it initiates the database exchange process with B and E. B and E may have C's stale LSA with a higher
                  sequence number in their database than the new ones originated by C and
-                 hence assume this is latest copy, successively bringing up the adjacency
+                 hence erroneously assume those being the newest copy, successively bringing up the adjacency
                  with C, and transitioning to Full state. Based on C's Stale LSA having LSA links to B and E,
                  the Shortest Path First (SPF) back-link check is satisfied and B and E update their routing table to point
                  to C. This may cause C to drop this traffic as C may not have all its previous adjacencies up and
-                 all LSAs in place to correctly compute the necessary routes.
+                 all LSAs in place to correctly compute the necessary routes. The situation corrects itself with C
+                 reissuing the LSAs with even higher sequence numbers over time so the condition is transient today
+                already.
             </t>
         </section>
           <section title="Solution" anchor='sec_solution'>
                <t>
-                 The database exchange procedure from <xref target ='RFC2328'/> section 7.2 is extended with additional
+                 To prevent the transient condition described
+                   the database exchange procedure from <xref target ='RFC2328'/> section 7.2 is extended with additional
                  constraints to prevent an OSPF router from transitioning to Full state when it has
                  stale LSAs originated by the database exchange neighbor in its Link State Database (LSDB).
                </t>
                <t>
-                 During Database exchange, when a router receives an LSA from the neighbor for which such neighbor is the originator
-                 of the LSA and the sequence number of the LSA is smaller than the sequence number of its own database copy, the receiving
-                 router marks its database copy as stale.
-				 This document proposes to create a new LSA list called "Stale LSA List".
-				 This list is created on a per neighbor basis and resembles the "LS Request List", the difference being
-				 LS Request messages are not sent for stale LSAs.
-				 The router creates a "Stale LSA List" for this neighbor and
-				 adds stale LSA to the Stale LSA List for the
-                 neighbor. This LSA MUST NOT be removed from the Stale LSA list and the adjacency FSM
-                 MUST NOT transition to Full state until an LSA with a sequence number greater than its own database copy is
-                 received (or strictly speaking, a "more recent" LSA).
-				 The Stale LSA List cleanup procedures follow the LSRequest list cleanup procedures as described in
-				  <xref target ='RFC2328'/>
+                 During an IDBX the router determined it should become adjacent with another OSPF router and for that
+                   purpose
+                   initially it enters the
+                 ExStart state and creates a "Database summary list" for the neighbor. In addition to this list a
+                   "Stale database exchange list"
+                 is created for such neighbor and is initially populated with LSAs in LSDB which were originated by it.
+                 The neighbor will not transition to Full state until both the Link state request list and the Stale database
+                 exchange list are empty. During the Database Exchange process entries are removed from the Stale database
+                 exchange list when
+                 the same or a more recent LSAs is referenced in a Database Description packet or the neighbor originates a
+                 more recent instance of the LSA, and it is received in a Link State Update packet. For stale LSAs in the
+                  router's Link State Database, the neighbor will request stale LSAs and originate more recent
+                 instances via normal OSPF procedures as illustrated in <xref target="sec_ex"/>.
                </t>
+               <section title="OSPF Specification Additions and Modifications" anchor='sec_additions'>
+                 <t>
+                   The following additions and modifications to OSPF <xref target="RFC2328"/> are needed for this feature.
+                   The application of the feature SHOULD be based on local configuration (refer to
+                   <xref target="sec_mgmt"/>).
+                 </t>
+                 <ol spacing="normal">
+                   <li>
+                     In section 10.3 "The Neighbor State Machine",
+                     State: ExStart, Event: NegotiationDone - The "Stale database exchange list"
+                     is created including LSAs with the "Advertising Router" set to the neighbor's Router ID.
+                   </li>
+                   <li>
+                     In section 10.3 "The Neighbor State Machine",
+                     State: Exchange, Event: ExchangeDone - The new neighbor state will not be Full
+                     unless both the Link state request list and the Stale database exchange list are empty.
+                   </li>
+                   <li>
+                     In section 10.3 "The Neighbor State Machine",
+                     State: Exchange or greater, Event: AdjOk? - If an adjacency will not be formed,
+                     the Stale database exchange list is also cleaned up. 
+                   </li>
+                   <li>
+                     In section 10.3 "The Neighbor State Machine",
+                     State: Any state, Event: KillNbr - The Stale database exchange list
+                     is also cleaned up. 
+                   </li>
+                   <li>
+                     In section 10.3 "The Neighbor State Machine",
+                     State: Any state, Event: LLDown - The Stale database exchange list
+                     is also cleaned up. 
+                   </li>
+                   <li>
+                     In section 10.3 "The Neighbor State Machine",
+                     State: Any state, Event: InactivityTimer - The Stale database exchange list is
+                     is also cleaned up. 
+                   </li>
+                   <li>
+                     In section 10.3 "The Neighbor State Machine",
+                     State: 2Way or greater, Event: 1-WayReceived - The Stale database exchange list is
+                     is also cleaned up. 
+                   </li>
+                   <li>
+                     In section 10.6 "Receiving Database Description Packets",
+                     If the Database Description packet is accepted, LSAs originated by the neighbor that
+                     are not less recent than the local database copy will be removed from the Stale database exchange
+                     list. LSAs that are less recent than the local database copy will remain on th State database
+                     exchange list and will be updated by the neighbor through the Loading phase of the Database exchange
+                     process.
+                   </li>
+                   <li>
+                     In section 13, "The Flooding Procedure", (5), (g): If the orignator of the more recent LSA is
+                     a neighbor that is in Exchange or Loading state, remove the LSA from the Stale database
+                     exchange list. If the neighbor is in Loading state and both the List state request list and
+                     the Stale database exchange list are empty, the Loading Done event is generated.
+                     In most cases, the LSA will have been received from the neighbor in Exchange or Loading state.
+                     However, this cannot be guaranteed due to packet loss and different propagation delays.
+                     Additionally, the neighbor may be in Exchange and Loading state on more than one interface. 
+                   </li>
+                 </ol>
+               </section>
                <section title="Example" anchor='sec_ex'>
                  <t>
                    <xref target ='seq_dgm'/> provides an example of C restarting having originated an LSA with sequence number
@@ -170,7 +234,9 @@
                      <artwork>
                              <![CDATA[
 
-          C-----------------E
+                 C-----------------E
+                               Create Stale DB Exchange
+                                List
 
       DBD: LSA A origin:C  ------->
           Sequence:X
@@ -179,17 +245,17 @@
       LSReq LSA A,
       origin C       ----->
                             Modified Procedure
-                     <------ Add LSA A to Stale LSA List
 
                      <------- LSA  A, Origin C, Seq:Y
       C re-originating self LSA
       LSA A, Origin C, -------> Remove Stale
-      Seq:Y+1                    LSA A, Origin C
-	                         From Stale LSA List,
+      Seq:Y+1                   LSA A, Origin C
+                                From Stale DB Exchange
+                                list.
 
-                                 Bring adjacency to Full state if
-                                 both LS Request list and Stale LSA
-                                 list are empty.
+                                Bring adjacency to Full state if
+                                both LS Request list and Stale DB
+                                Exchange list are empty.
 
 
                          ]]>
@@ -197,17 +263,28 @@
                          </figure>
                             As shown in figure <xref target ='seq_dgm'/> above, E originates LSReq with Sequence number X but
                             waits until the LSA with sequence number Y+1 (or strictly speaking, an LSA that compares as newer
-                            to the one it holds) arrives. As the LSA is still in the Stale LSA List, the adjacency
+                            to the one it holds) arrives. As the LSA is still in the Stale DB Exchange List, the adjacency
                             will remain in Loading state and will not move to Full state. All the neighbors of the restarting routers
                             hold the neighbor FSM in Loading state and do not transition to Full state until the stale
-                            LSA is replaced with the new LSA
-                            with higher sequence number than the stale LSA. This ensures that other routers in the network do not compute
+                            LSA is replaced with the new LSA that is more recent than the stale LSA. This ensures that other
+                            routers in the network do not compute
                             a path through the restarting router since they cannot satisfy the bi-directionality condition
                             in SPF computations.
                  </t>
                </section>
           </section>
 
+          <section anchor="sec_mgmt" title="Management Considerations" toc="default">
+            <t>
+              Application the Database exchange procedure specified in this documennt SHOULD
+              be based on local configuration with the default
+              behavior not to perform the addition Stale database exchange list processed specified
+              in this document. Not all OSPF networks require elimination of traffic drops during
+              the Database exchange process (as evidenced by the fact that OSPF has been deployed
+              for several decades without this added packet loss mitigation). Additionally, optional
+              configuration will encourage implementation and deployment.
+            </t>
+          </section> 
           <section anchor="IANA" title="IANA Considerations" toc="default">
 
             <t>

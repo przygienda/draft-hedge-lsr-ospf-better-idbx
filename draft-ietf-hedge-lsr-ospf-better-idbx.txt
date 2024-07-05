@@ -5,13 +5,13 @@
 Network Working Group                                           S. Hegde
 Internet-Draft                                             A. Przygienda
 Intended status: Informational                                   Juniper
-Expires: 7 October 2023                                        A. Lindem
+Expires: 6 January 2025                                        A. Lindem
                                                      LabN Consulting LLC
-                                                            5 April 2023
+                                                             5 July 2024
 
 
-                          Trusted Domain SRv6
-                    draft-hegde-lsr-ospf-better-idbx
+               Improved OSPF Database Exchange Procedure
+                  draft-hegde-lsr-ospf-better-idbx-02
 
 Abstract
 
@@ -25,7 +25,7 @@ Abstract
    be interpreted as bi-directional connectivity before the initial
    database exchanges are finished and genuine bi-directional LSA
    connectivity exists.  Such incorrect interpretation may lead to,
-   among other thiegs, transient traffic packect drops.  This document
+   among other things, transient traffic packet drops.  This document
    suggests improvements in the OSPF database exchange process to
    prevent such problems due to stale LSA utilization.  The solution
    does not preclude changes in the existing standard but presents an
@@ -53,9 +53,9 @@ Status of This Memo
 
 
 
-Hegde, et al.            Expires 7 October 2023                 [Page 1]
+Hegde, et al.            Expires 6 January 2025                 [Page 1]
 
-Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx           July 2024
 
 
    Internet-Drafts are draft documents valid for a maximum of six months
@@ -63,11 +63,11 @@ Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 7 October 2023.
+   This Internet-Draft will expire on 6 January 2025.
 
 Copyright Notice
 
-   Copyright (c) 2023 IETF Trust and the persons identified as the
+   Copyright (c) 2024 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
 
    This document is subject to BCP 78 and the IETF Trust's Legal
@@ -83,22 +83,24 @@ Table of Contents
 
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
    2.  Solution  . . . . . . . . . . . . . . . . . . . . . . . . . .   3
-     2.1.  Example . . . . . . . . . . . . . . . . . . . . . . . . .   3
-   3.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   4
-   4.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
-   5.  Contributors  . . . . . . . . . . . . . . . . . . . . . . . .   4
-   6.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   4
-     6.1.  Informative References  . . . . . . . . . . . . . . . . .   4
-     6.2.  Normative References  . . . . . . . . . . . . . . . . . .   5
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   5
+     2.1.  OSPF Specification Additions and Modifications  . . . . .   4
+     2.2.  Example . . . . . . . . . . . . . . . . . . . . . . . . .   5
+   3.  Management Considerations . . . . . . . . . . . . . . . . . .   6
+   4.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   6
+   5.  Security Considerations . . . . . . . . . . . . . . . . . . .   6
+   6.  Contributors  . . . . . . . . . . . . . . . . . . . . . . . .   6
+   7.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   6
+     7.1.  Informative References  . . . . . . . . . . . . . . . . .   6
+     7.2.  Normative References  . . . . . . . . . . . . . . . . . .   6
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   7
 
 1.  Introduction
 
    When an OSPF [RFC2328] router restarts, its stale LSAs are left in
    the database of other routers in the OSPF domain until the LSAs are
    aged out either intentionally or by the LSA age elapsing.  The stale
-   Router LSA can contain links to all the neighbors that had
-   adjacencies Up before the router restarted.
+   Router LSA can contain links to all the neighbors that had Full
+   adjacencies before the router restarted.
 
 
 
@@ -107,11 +109,9 @@ Table of Contents
 
 
 
-
-
-Hegde, et al.            Expires 7 October 2023                 [Page 2]
+Hegde, et al.            Expires 6 January 2025                 [Page 2]
 
-Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx           July 2024
 
 
                                ----------C--------
@@ -131,32 +131,114 @@ Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
    C before it went down.  When C restarts again, it initiates the
    database exchange process with B and E.  B and E may have C's stale
    LSA with a higher sequence number in their database than the new ones
-   originated by C and hence assume this is latest copy, successively
-   bringing up the adjacency with C, and transitioning to Full state.
-   Based on C's Stale LSA having LSA links to B and E, the Shortest Path
-   First (SPF) back-link check is satisfied and B and E update their
-   routing table to point to C.  This may cause C to drop this traffic
-   as C may not have all its previous adjacencies up and all LSAs in
-   place to correctly compute the necessary routes.
+   originated by C and hence erroneously assume those being the newest
+   copy, successively bringing up the adjacency with C, and
+   transitioning to Full state.  Based on C's Stale LSA having LSA links
+   to B and E, the Shortest Path First (SPF) back-link check is
+   satisfied and B and E update their routing table to point to C.  This
+   may cause C to drop this traffic as C may not have all its previous
+   adjacencies up and all LSAs in place to correctly compute the
+   necessary routes.  The situation corrects itself with C reissuing the
+   LSAs with even higher sequence numbers over time so the condition is
+   transient today already.
 
 2.  Solution
 
-   The database exchange procedure from [RFC2328] section 7.2 is
-   extended with additional constraints to prevent an OSPF router from
-   transitioning to Full state when it has stale LSAs originated by the
-   database exchange neighbor in its Link State Database (LSDB).
+   To prevent the transient condition described the database exchange
+   procedure from [RFC2328] section 7.2 is extended with additional
+   constraints to prevent an OSPF router from transitioning to Full
+   state when it has stale LSAs originated by the database exchange
+   neighbor in its Link State Database (LSDB).
 
-   During Database exchange, when a router receives an LSA from the
-   neighbor for which such neighbor is the originator of the LSA and the
-   sequence number of the LSA is smaller than the sequence number of its
-   database copy, the receiving router marks its database copy as stale.
-   The router will add this stale LSA to the Link State Request List for
-   the neighbor.  This LSA MUST NOT be removed from the Link State
-   Request list and the adjacency FSM MUST NOT transition to Full state
-   until an LSA with a sequence number greater than its own database
-   copy is received (or strictly speaking, a "more recent" LSA).
+   During an IDBX the router determined it should become adjacent with
+   another OSPF router and for that purpose initially it enters the
+   ExStart state and creates a "Database summary list" for the neighbor.
+   In addition to this list a "Stale database exchange list" is created
+   for such neighbor and is initially populated with LSAs in LSDB which
+   were originated by it.  The neighbor will not transition to Full
+   state until both the Link state request list and the Stale database
+   exchange list are empty.  During the Database Exchange process
+   entries are removed from the Stale database exchange list when the
+   same or a more recent LSAs is referenced in a Database Description
+   packet or the neighbor originates a more recent instance of the LSA,
+   and it is received in a Link State Update packet.  For stale LSAs in
 
-2.1.  Example
+
+
+Hegde, et al.            Expires 6 January 2025                 [Page 3]
+
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx           July 2024
+
+
+   the router's Link State Database, the neighbor will request stale
+   LSAs and originate more recent instances via normal OSPF procedures
+   as illustrated in Section 2.2.
+
+2.1.  OSPF Specification Additions and Modifications
+
+   The following additions and modifications to OSPF [RFC2328] are
+   needed for this feature.  The application of the feature SHOULD be
+   based on local configuration (refer to Section 3).
+
+   1.  In section 10.3 "The Neighbor State Machine", State: ExStart,
+       Event: NegotiationDone - The "Stale database exchange list" is
+       created including LSAs with the "Advertising Router" set to the
+       neighbor's Router ID.
+
+   2.  In section 10.3 "The Neighbor State Machine", State: Exchange,
+       Event: ExchangeDone - The new neighbor state will not be Full
+       unless both the Link state request list and the Stale database
+       exchange list are empty.
+
+   3.  In section 10.3 "The Neighbor State Machine", State: Exchange or
+       greater, Event: AdjOk? - If an adjacency will not be formed, the
+       Stale database exchange list is also cleaned up.
+
+   4.  In section 10.3 "The Neighbor State Machine", State: Any state,
+       Event: KillNbr - The Stale database exchange list is also cleaned
+       up.
+
+   5.  In section 10.3 "The Neighbor State Machine", State: Any state,
+       Event: LLDown - The Stale database exchange list is also cleaned
+       up.
+
+   6.  In section 10.3 "The Neighbor State Machine", State: Any state,
+       Event: InactivityTimer - The Stale database exchange list is is
+       also cleaned up.
+
+   7.  In section 10.3 "The Neighbor State Machine", State: 2Way or
+       greater, Event: 1-WayReceived - The Stale database exchange list
+       is is also cleaned up.
+
+   8.  In section 10.6 "Receiving Database Description Packets", If the
+       Database Description packet is accepted, LSAs originated by the
+       neighbor that are not less recent than the local database copy
+       will be removed from the Stale database exchange list.  LSAs that
+       are less recent than the local database copy will remain on th
+       State database exchange list and will be updated by the neighbor
+       through the Loading phase of the Database exchange process.
+
+
+
+
+Hegde, et al.            Expires 6 January 2025                 [Page 4]
+
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx           July 2024
+
+
+   9.  In section 13, "The Flooding Procedure", (5), (g): If the
+       orignator of the more recent LSA is a neighbor that is in
+       Exchange or Loading state, remove the LSA from the Stale database
+       exchange list.  If the neighbor is in Loading state and both the
+       List state request list and the Stale database exchange list are
+       empty, the Loading Done event is generated.  In most cases, the
+       LSA will have been received from the neighbor in Exchange or
+       Loading state.  However, this cannot be guaranteed due to packet
+       loss and different propagation delays.  Additionally, the
+       neighbor may be in Exchange and Loading state on more than one
+       interface.
+
+2.2.  Example
 
    Figure 2 provides an example of C restarting having originated an LSA
    with sequence number Y before.  After restarting C originates the
@@ -165,68 +247,79 @@ Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
 
 
 
-Hegde, et al.            Expires 7 October 2023                 [Page 3]
-
-Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
-
-
-             C-----------------E
+                    C-----------------E
+                                  Create Stale DB Exchange
+                                   List
 
          DBD: LSA A origin:C  ------->
              Sequence:X
                                  DBD: LSA A Origin:C
                          <------       Sequence:Y
          LSReq LSA A,
-         origin C, Seq Y----->
+         origin C       ----->
                                Modified Procedure
-                        <------ LSReq LSA A, Origin C, Seq X
-         LSA A, Origin C,
-         Seq:X          ------->
+
                         <------- LSA  A, Origin C, Seq:Y
          C re-originating self LSA
-         LSA A, Origin C, -------> Mark LSReq
-         Seq:Y+1                    LSAA, Origin C, Seq X
-                                     Satisfied
+         LSA A, Origin C, -------> Remove Stale
+         Seq:Y+1                   LSA A, Origin C
+                                   From Stale DB Exchange
+                                   list.
+
+                                   Bring adjacency to Full state if
+                                   both LS Request list and Stale DB
+                                   Exchange list are empty.
+
 
 
 
                Figure 2: Modified Database Exchange Procedure
 
+
+
+Hegde, et al.            Expires 6 January 2025                 [Page 5]
+
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx           July 2024
+
+
    As shown in figure Figure 2 above, E originates LSReq with Sequence
    number X but waits until the LSA with sequence number Y+1 (or
    strictly speaking, an LSA that compares as newer to the one it holds)
-   arrives.  As the LSA is still in the LSReq queue, the adjacency will
-   remain in Loading state and will not move to Full state.  All the
-   neighbors of the restarting routers hold the neighborship in Loading
-   state and do not make it Full until the stale LSA is replaced with
-   the new LSA with higher sequence number than the stale LSA.  This
-   ensures that other routers in the network do not compute a path
-   through the restarting router since they cannot satisfy the bi-
-   directionality condition in SPF computations.
+   arrives.  As the LSA is still in the Stale DB Exchange List, the
+   adjacency will remain in Loading state and will not move to Full
+   state.  All the neighbors of the restarting routers hold the neighbor
+   FSM in Loading state and do not transition to Full state until the
+   stale LSA is replaced with the new LSA that is more recent than the
+   stale LSA.  This ensures that other routers in the network do not
+   compute a path through the restarting router since they cannot
+   satisfy the bi-directionality condition in SPF computations.
 
-3.  IANA Considerations
+3.  Management Considerations
+
+   Application the Database exchange procedure specified in this
+   documennt SHOULD be based on local configuration with the default
+   behavior not to perform the addition Stale database exchange list
+   processed specified in this document.  Not all OSPF networks require
+   elimination of traffic drops during the Database exchange process (as
+   evidenced by the fact that OSPF has been deployed for several decades
+   without this added packet loss mitigation).  Additionally, optional
+   configuration will encourage implementation and deployment.
+
+4.  IANA Considerations
 
    No IANA Considerations
 
-4.  Security Considerations
+5.  Security Considerations
 
 
-5.  Contributors
+6.  Contributors
 
 
-6.  References
+7.  References
 
-6.1.  Informative References
+7.1.  Informative References
 
-
-
-
-Hegde, et al.            Expires 7 October 2023                 [Page 4]
-
-Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
-
-
-6.2.  Normative References
+7.2.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
@@ -236,6 +329,14 @@ Internet-Draft      draft-hegde-lsr-ospf-better-idbx          April 2023
    [RFC2328]  Moy, J., "OSPF Version 2", STD 54, RFC 2328,
               DOI 10.17487/RFC2328, April 1998,
               <https://www.rfc-editor.org/info/rfc2328>.
+
+
+
+
+Hegde, et al.            Expires 6 January 2025                 [Page 6]
+
+Internet-Draft      draft-hegde-lsr-ospf-better-idbx           July 2024
+
 
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
@@ -277,4 +378,15 @@ Authors' Addresses
 
 
 
-Hegde, et al.            Expires 7 October 2023                 [Page 5]
+
+
+
+
+
+
+
+
+
+
+
+Hegde, et al.            Expires 6 January 2025                 [Page 7]
