@@ -273,7 +273,62 @@
                  </t>
                </section>
           </section>
-
+          <section title="Potential Optimizations" anchor='sec_optimize'>
+            <t>
+              The solution described in <xref target="sec_solution"/> assures stale LSAs for a
+              restarting router are either updated or purged before neighbors of the restarting
+              router advertise a link to the restarting router. However, there are several optimizations
+              being considered.
+            </t>
+            <section title="Restarting Neighbor Tracking" anchor='sec_nbr_track'>
+              <t>
+                OSPF Routers would maintain a "Stale Neighbor List" containing the router IDs and
+                interfaces for neighbor that were previously in Full state but recently went down. The
+                procedures in <xref target="sec_solution"/> would then only be applied for neighbors
+                on the Stale Neighbor List. Neighbors would be removed from the Stale Neighbor List when
+                a new adjacency is formed with the neighbor or after a configured interval. The
+                interval SHOULD be longer than the expected duration of an unplanned neighbor restart. 
+              </t>
+            </section>
+            <section title="Limited LSA Tracking" anchor='sec_lsa_track'>
+              <t>
+                Rather than adding all the restarting router's LSAs in the Link-State Database (LSDB) to the
+                Stale DB Exchange list, only the following LSAs would be added:
+              </t>
+              <ul spacing="normal">
+                <li>
+                  Router-LSA containing one or more links to the local router 
+                </li>
+                <li>
+                  Network-LSAs containing a link to the local router 
+                </li>
+              </ul>
+              <t>
+                The procedures in <xref target="sec_solution"/> will guarantee that the LSAs on the
+                Stale DB Exchange list are updated  before the local router advertises a link
+                to the restarting router. Given that the these stale LSAs are the only ones containing
+                a link to the local router, their update will prevent usage of the link until the
+                restarting router has established an adjacency with the local router. As part of
+                the restarting router establishing an adjacency and advertising a link to the
+                local router, the restarting router will synchronize its LSDB with the local router
+                and will update or purge stale
+                LSAs previously originated by the restarting router. These stale LSAs will be
+                requested by the restarting router using Link State Request packets
+                (section 10.9 in <xref target="RFC2328"/>)
+                and, when received, updated or purgeed using the procedure specified
+                in section 13.4 <xref target="RFC2328"/>.  
+              </t>
+              <t>
+                The restarting router's LSAs containing a link to the local router are added to the
+                Stale DB Exchange list and will be
+                updated or purged prior to the local router advertising a link to the restarting router.
+                Additionally, the restarting router will not advertise a link to the local router
+                until it has synchronized its LSDB with the local router. Hence, the restarting
+                router's other stale LSAs will be updated or purged prior both routers advertising a
+                link and these other stale LSAs need not be added to the Stale DB Exchange list.
+              </t>  
+          </section> 
+          </section> 
           <section anchor="sec_mgmt" title="Management Considerations" toc="default">
             <t>
               Application the Database exchange procedure specified in this documennt SHOULD
