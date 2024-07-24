@@ -9,7 +9,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-02"
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-03"
      ipr="trust200902"
      obsoletes="" submissionType="IETF" updates="" xml:lang="en">
     <front>
@@ -159,7 +159,7 @@
                  The neighbor will not transition to Full state until both the Link state request list and the Stale database
                  exchange list are empty. During the Database Exchange process entries are removed from the Stale database
                  exchange list when
-                 the same or a more recent LSAs is referenced in a Database Description packet or the neighbor originates a
+v                 the same or a more recent LSAs is referenced in a Database Description packet or the neighbor originates a
                  more recent instance of the LSA, and it is received in a Link State Update packet. For stale LSAs in the
                   router's Link State Database, the neighbor will request stale LSAs and originate more recent
                  instances via normal OSPF procedures as illustrated in <xref target="sec_ex"/>.
@@ -328,6 +328,20 @@
                 link and these other stale LSAs need not be added to the Stale DB Exchange list.
               </t>  
           </section> 
+          </section> 
+          <section title="Restarting Router Data Plane Convergence" anchor='data_plane_converge'>
+            <t>
+              The procedures in <xref target="sec_solution"/> don't attempt to solve the problem of the restarting
+              router's adjacency being used prior to the data plane being updated with the routes associated
+              with the adjacency. This problem can occur on platforms with a non-neglible delay being the control plane
+              Routing Information Base (RIB) being updated and the platform's data plane Forwarding
+              Information Bases (FIBs) being updated. However, this delay is local to the restarting router and
+              can be avoided by delaying the advertisements of adjacecies (i.e., as links in the restarting router's
+              router-LSA or network-LSAs) can be handled local by delaying these advertisements until the
+              data plane has been updated. As long as the restarting router's stale LSAs have been updated or purged
+              as described in <xref target="sec_solution"/>, the scope of delaying usage of the adjacency before
+              the restarting router's data plane has converged is completely under the local control.
+            </t>
           </section> 
           <section anchor="sec_mgmt" title="Management Considerations" toc="default">
             <t>
