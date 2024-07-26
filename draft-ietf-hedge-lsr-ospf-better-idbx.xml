@@ -9,7 +9,7 @@
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
 <?rfc subcompact="no"?>
-<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-03"
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude"  category="info" docName="draft-hegde-lsr-ospf-better-idbx-04"
      ipr="trust200902"
      obsoletes="" submissionType="IETF" updates="" xml:lang="en">
     <front>
@@ -277,18 +277,10 @@ v                 the same or a more recent LSAs is referenced in a Database Des
             <t>
               The solution described in <xref target="sec_solution"/> assures stale LSAs for a
               restarting router are either updated or purged before neighbors of the restarting
-              router advertise a link to the restarting router. However, there are several optimizations
-              being considered.
+              router advertise a link to the restarting router. This section describes
+              optimizations that are being considered.
             </t>
             <section title="Restarting Neighbor Tracking" anchor='sec_nbr_track'>
-              <t>
-                OSPF Routers would maintain a "Stale Neighbor List" containing the router IDs and
-                interfaces for neighbor that were previously in Full state but recently went down. The
-                procedures in <xref target="sec_solution"/> would then only be applied for neighbors
-                on the Stale Neighbor List. Neighbors would be removed from the Stale Neighbor List when
-                a new adjacency is formed with the neighbor or after a configured interval. The
-                interval SHOULD be longer than the expected duration of an unplanned neighbor restart. 
-              </t>
             </section>
             <section title="Limited LSA Tracking" anchor='sec_lsa_track'>
               <t>
@@ -338,7 +330,12 @@ v                 the same or a more recent LSAs is referenced in a Database Des
               Information Bases (FIBs) being updated. However, this delay is local to the restarting router and
               can be avoided by delaying the advertisements of adjacecies (i.e., as links in the restarting router's
               router-LSA or network-LSAs) can be handled local by delaying these advertisements until the
-              data plane has been updated. As long as the restarting router's stale LSAs have been updated or purged
+              data plane has been updated. Note that the restarting router's SPF calculation will need to include
+              these links in order to compute the necessary routes (even though advertisement is delayed). How this is
+              accomplished is an implementation detail that is not specified here.
+            </t>
+            <t>
+              As long as the restarting router's stale LSAs have been updated or purged
               as described in <xref target="sec_solution"/>, the scope of delaying usage of the adjacency before
               the restarting router's data plane has converged is completely under the local control.
             </t>
